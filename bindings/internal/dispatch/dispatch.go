@@ -25,6 +25,14 @@ type Config struct {
 	// DeviceResets 是一次调用最多换几台新设备。缺省时用 SDK 的默认值，0 表示关闭。
 	DeviceResets *int         `json:"deviceResets"`
 	Device       model.Device `json:"device"`
+	// AppVersion / AppVersionCode / Platform 覆盖请求里的 App 身份，
+	// 缺省时用 SDK 编译时的值。Platform 取值 "android" 或 "openHarmony"。
+	AppVersion     string `json:"appVersion"`
+	AppVersionCode string `json:"appVersionCode"`
+	Platform       string `json:"platform"`
+	// PlaybackContentType 是 video_model 的 content_type（漫剧 1004）；
+	// 0 表示不发送，保持旧版 body 形状。
+	PlaybackContentType int `json:"playbackContentType"`
 }
 
 // ParseConfig 解码 raw；raw 为空时返回零值。
@@ -47,6 +55,10 @@ func (cfg Config) Apply(opts *sdk.Options) {
 	opts.RetryAttempts = cfg.RetryAttempts
 	opts.DeviceResets = cfg.DeviceResets
 	opts.Device = cfg.Device
+	opts.AppVersion = cfg.AppVersion
+	opts.AppVersionCode = cfg.AppVersionCode
+	opts.Platform = cfg.Platform
+	opts.PlaybackContentType = cfg.PlaybackContentType
 }
 
 // method 是一个可按名字调用的 SDK 方法：args 是参数数组的各项。

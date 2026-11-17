@@ -155,7 +155,47 @@ type SearchIdentity struct {
 	// Device is the phone the profile registered as; zero fields fall back
 	// to model.DefaultDevice.
 	Device model.Device
+	// VersionName, VersionCode and Platform override the app identity above.
+	// Empty fields keep the values the shipped client reports (app.go). They
+	// let a caller speak as a newer build or as the openHarmony client, which
+	// the playback endpoint treats differently (2026-11-17).
+	VersionName string
+	VersionCode string
+	Platform    string
+	// OAID and KlinkEgdi are device identifiers the shipped client repeats on
+	// every signed request. KlinkEgdi is handed out by device_register; empty
+	// values are left out of the query.
+	OAID      string
+	KlinkEgdi string
 }
+
+// effectiveVersionName is the version_name the request will carry.
+func (id SearchIdentity) effectiveVersionName() string {
+	if id.VersionName != "" {
+		return id.VersionName
+	}
+	return VersionName
+}
+
+// effectiveVersionCode is the version_code family the request will carry.
+func (id SearchIdentity) effectiveVersionCode() string {
+	if id.VersionCode != "" {
+		return id.VersionCode
+	}
+	return VersionCode
+}
+
+// effectivePlatform is the os / device_platform the request will carry.
+func (id SearchIdentity) effectivePlatform() string {
+	if id.Platform != "" {
+		return id.Platform
+	}
+	return DevicePlatform
+}
+
+// EffectiveVersionName exposes the resolved version_name for callers that sign
+// separately from DeviceQueryPairs.
+func (id SearchIdentity) EffectiveVersionName() string { return id.effectiveVersionName() }
 
 // DeviceQueryPairs is the ordered anonymous device query. Order is part of the signature.
 func DeviceQueryPairs(id SearchIdentity) [][2]string {
@@ -164,7 +204,8 @@ func DeviceQueryPairs(id SearchIdentity) [][2]string {
 	if d.Pad {
 		kind, pad = "pad", "1"
 	}
-	return [][2]string{
+	versionName, versionCode, platform := id.effectiveVersionName(), id.effectiveVersionCode(), id.effectivePlatform()
+	pairs := [][2]string{
 		{"iid", id.InstallID},
 		{"device_id", id.DeviceID},
 		{"ac", "wifi"},
@@ -172,29 +213,36 @@ func DeviceQueryPairs(id SearchIdentity) [][2]string {
 		{"aid", AID},
 		{"app_name", AppName},
 		{"cdid", id.CDID},
-		{"version_code", VersionCode},
-		{"version_name", VersionName},
-		{"device_platform", DevicePlatform},
-		{"os", "android"},
+		{"version_code", versionCode},
+		{"version_name", versionName},
+		{"device_platform", platform},
+		{"os", platform},
 		{"ssmix", "a"},
 		{"device_type", d.Model},
 		{"device_brand", d.Brand},
 		{"language", "zh"},
 		{"os_api", strconv.Itoa(d.OSAPI)},
 		{"os_version", d.OSVersion},
-		{"manifest_version_code", VersionCode},
+		{"manifest_version_code", versionCode},
 		{"resolution", d.Resolution},
 		{"dpi", strconv.Itoa(d.DPI)},
-		{"update_version_code", VersionCode},
+		{"update_version_code", versionCode},
 		{"host_abi", "arm64-v8a"},
 		{"dragon_device_type", kind},
-		{"pv_player", VersionCode},
+		{"pv_player", versionCode},
 		{"compliance_status", "0"},
 		{"need_personal_recommend", "1"},
 		{"player_so_load", "1"},
 		{"is_android_pad_screen", pad},
 		{"openudid", id.OpenUDID},
 	}
+	if id.KlinkEgdi != "" {
+		pairs = append(pairs, [2]string{"klink_egdi", id.KlinkEgdi})
+	}
+	if id.OAID != "" {
+		pairs = append(pairs, [2]string{"oaid", id.OAID})
+	}
+	return pairs
 }
 
 // SignedSearchPairs is the ordered search query. Order is part of the signature.
@@ -542,13 +590,21 @@ func AlbumBody(albumID string) ([]byte, error) {
 	})
 }
 
-func PlaybackBody(episodeID string) ([]byte, error) {
-	return jsonMarshal(map[string]any{
-		"video_id": episodeID,
-		"biz_param": map[string]any{
-			"video_id_type":             0,
-			"need_all_video_definition": true,
-			"video_platform":            3,
-		},
-	})
+// PlaybackBody is the JSON body for video_model. contentType is the work's
+// content_type (1004 is 漫剧); 0 keeps the historical shape, which sends
+// video_id_type instead. The shipped client sends content_type at the top
+// level and omits video_id_type (2026-11-17 capture), and the endpoint
+// answers an empty body when the shape does not match.
+func PlaybackBody(episodeID string, contentType int) ([]byte, error) {
+	biz := map[string]any{
+		"need_all_video_definition": true,
+		"video_platform":            3,
+	}
+	body := map[string]any{"video_id": episodeID, "biz_param": biz}
+	if contentType > 0 {
+		body["content_type"] = contentType
+	} else {
+		biz["video_id_type"] = 0
+	}
+	return jsonMarshal(body)
 }

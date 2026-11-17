@@ -50,6 +50,18 @@ type Options struct {
 	// nil 表示默认的 2 次；sdk.Int(0) 表示关闭，交给调用方自己调用 ResetDevice。
 	// 换设备会覆盖 ProfileStore 里保存的档案，并通过 Logger 记一行日志。
 	DeviceResets *int
+	// AppVersion、AppVersionCode 覆盖请求里的 App 身份（version_name、
+	// version_code 及其派生字段）。为空时沿用编译时的版本 7.3.9.32。
+	// Platform 覆盖 os 和 device_platform（"android" 或 "openHarmony"），
+	// 为空时沿用 "android"。2026-11-17 起播放接口对旧版本返回空包，
+	// 真机 7.4.4.32/openHarmony 仍能拿到模型，这两个字段用来对齐它。
+	AppVersion     string
+	AppVersionCode string
+	Platform       string
+	// PlaybackContentType 是 video_model 的 content_type（漫剧为 1004）。
+	// 0 表示不发送该字段，保持旧版 body 形状；真机在带 content_type 时
+	// 不再发送 video_id_type。
+	PlaybackContentType int
 }
 
 // Int 返回指向 v 的指针，用来设置 Options.DeviceResets 这类可选的整数字段，

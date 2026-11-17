@@ -130,6 +130,14 @@ export interface ClientOptions {
   deviceResets?: number;
   /** 新注册设备自称的机型；未填的字段取默认值（小米 14）。 */
   device?: Partial<Device>;
+  /** 请求里自称的 version_name，默认 7.3.9.32。 */
+  appVersion?: string;
+  /** 请求里自称的 version_code，默认 73932。 */
+  appVersionCode?: string;
+  /** 请求里的 os 和 device_platform，取值 "android"（默认）或 "openHarmony"。 */
+  platform?: string;
+  /** video_model 的 content_type（漫剧 1004）；0 表示不发送，保持旧版 body。 */
+  playbackContentType?: number;
 }
 
 /** PlaybackResult 是 resolvePlayback 的结果。 */

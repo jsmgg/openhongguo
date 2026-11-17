@@ -19,6 +19,10 @@ type RegisterResult struct {
 	DeviceID  string
 	InstallID string
 	NewUser   int
+	// KlinkEgdi is the device credential the register endpoint hands out
+	// ("AAJ..." style). The playback endpoint expects it back in the query;
+	// requests without it answer an empty body (observed 2026-11-17).
+	KlinkEgdi string
 }
 
 // BuildRegisterBody gzip-compresses the anonymous ss_app_log envelope and applies
@@ -197,6 +201,7 @@ func ParseRegister(raw []byte) (RegisterResult, error) {
 		DeviceID  flexString `json:"device_id_str"`
 		InstallID flexString `json:"install_id_str"`
 		NewUser   int        `json:"new_user"`
+		KlinkEgdi string     `json:"klink_egdi"`
 	}
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return RegisterResult{}, err
@@ -206,7 +211,9 @@ func ParseRegister(raw []byte) (RegisterResult, error) {
 	if id == "" || id == "0" || install == "" || install == "0" {
 		return RegisterResult{}, errNoGuest
 	}
-	return RegisterResult{DeviceID: id, InstallID: install, NewUser: env.NewUser}, nil
+	return RegisterResult{
+		DeviceID: id, InstallID: install, NewUser: env.NewUser, KlinkEgdi: env.KlinkEgdi,
+	}, nil
 }
 
 type noGuestError struct{}

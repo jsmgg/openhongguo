@@ -42,6 +42,13 @@ type Client struct {
 	distOrigin     string
 	// device 是新档案注册时使用的设备（Options.Device）。
 	device model.Device
+	// appVersion、appVersionCode、platform 是请求里出示的 App 身份
+	// （Options.AppVersion 等），空值已在 NewClient 里回退成协议默认值。
+	appVersion     string
+	appVersionCode string
+	platform       string
+	// playbackContentType 是 video_model 的 content_type，0 表示不发送。
+	playbackContentType int
 	// retryAttempts 是单个请求最多执行的次数（1 表示不重试）。
 	retryAttempts int
 	// deviceResets 是一次调用最多换几台新设备（0 表示不换）。
@@ -91,10 +98,26 @@ func NewClient(opts Options) (*Client, error) {
 	if err := opts.Device.Validate(); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidOptions, err)
 	}
+	appVersion := opts.AppVersion
+	if appVersion == "" {
+		appVersion = protocol.VersionName
+	}
+	appVersionCode := opts.AppVersionCode
+	if appVersionCode == "" {
+		appVersionCode = protocol.VersionCode
+	}
+	platform := opts.Platform
+	if platform == "" {
+		platform = protocol.DevicePlatform
+	}
 	return &Client{
-		device:        opts.Device.OrDefault(),
-		retryAttempts: attempts,
-		deviceResets:  resets,
+		device:              opts.Device.OrDefault(),
+		appVersion:          appVersion,
+		appVersionCode:      appVersionCode,
+		platform:            platform,
+		playbackContentType: opts.PlaybackContentType,
+		retryAttempts:       attempts,
+		deviceResets:        resets,
 		transport:     opts.Transport, profileStore: opts.ProfileStore,
 		signer: opts.Signer, authProvider: opts.AuthProvider,
 		logger: opts.Logger, clock: opts.Clock,
@@ -355,6 +378,9 @@ func (c *Client) loadOrRegister(ctx context.Context, needTicket bool) (*DevicePr
 	p.DeviceID = registered.DeviceID
 	p.InstallID = registered.InstallID
 	p.DeviceToken = ""
+	if registered.KlinkEgdi != "" {
+		p.KlinkEgdi = registered.KlinkEgdi
+	}
 	applyGuestCookies(p, cookies)
 	if needTicket && len(cookies) > 0 && p.TTReq == "" {
 		return nil, fmt.Errorf("%w: guest ticket missing", ErrAnonymousLimited)
@@ -422,7 +448,10 @@ func randInt64() (int64, error) {
 func (c *Client) identity(p *DeviceProfile) protocol.SearchIdentity {
 	return protocol.SearchIdentity{
 		DeviceID: p.DeviceID, InstallID: p.InstallID, CDID: p.CDID, OpenUDID: p.OpenUDID,
-		Device: c.deviceOf(p),
+		Device:      c.deviceOf(p),
+		VersionName: c.appVersion, VersionCode: c.appVersionCode, Platform: c.platform,
+		OAID:      p.OAID,
+		KlinkEgdi: p.KlinkEgdi,
 	}
 }
 

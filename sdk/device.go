@@ -25,6 +25,9 @@ type DeviceProfile struct {
 	DeviceID    string `json:"device_id_str,omitempty"`
 	InstallID   string `json:"install_id_str,omitempty"`
 	DeviceToken string `json:"device_token,omitempty"`
+	// KlinkEgdi 是注册接口下发的设备凭证，播放请求会带上它。
+	// 老档案没有该字段，请求时按空值跳过。
+	KlinkEgdi string `json:"klink_egdi,omitempty"`
 	// TTReq、StoreRegion 和 StoreRegionSrc 是服务端设置的 cookie，
 	// 后续请求会原样带上。
 	TTReq          string `json:"ttreq,omitempty"`

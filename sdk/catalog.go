@@ -239,7 +239,7 @@ func anonymousHeaders(c *Client, p *DeviceProfile, ticket int64, headers map[str
 	if headers == nil {
 		headers = map[string]string{}
 	}
-	headers["User-Agent"] = protocol.UserAgent(c.deviceOf(p))
+	headers["User-Agent"] = protocol.UserAgentFor(c.deviceOf(p), c.appVersionCode)
 	headers["x-ss-dp"] = protocol.AID
 	headers["lc"] = "101"
 	headers["x-reading-request"] = protocol.ReadingRequestID(ticket, c.randomInt31())
