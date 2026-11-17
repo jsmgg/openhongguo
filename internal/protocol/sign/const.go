@@ -45,6 +45,10 @@ const (
 	gorgonSDKVersion uint32 = 67503104
 	appID                   = "8662"
 	channelID               = "1588093228"
+	// heliosID is the licence id the x-helios plaintext carries. It is not the
+	// channel id: a captured openHarmony 7.4.4.32 playback request decrypts to
+	// "<ts>-279266862-8662", while medusa keeps signing with channelID.
+	heliosID = "279266862"
 )
 
 var branch2SV = [64]uint32{

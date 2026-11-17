@@ -54,7 +54,7 @@ func diffuse(words []uint64) []uint64 {
 }
 
 func heliosPad(khronos uint32) []byte {
-	text := []byte(fmt.Sprintf("%d-%s-%s", khronos, channelID, appID))
+	text := []byte(fmt.Sprintf("%d-%s-%s", khronos, heliosID, appID))
 	fill := byte(16 - (len(text) % 16))
 	size := ((len(text) + 1 + 15) / 16) * 16
 	out := make([]byte, size)

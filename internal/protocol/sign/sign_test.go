@@ -49,7 +49,10 @@ func TestGorgonHeliosAndMedusaMatchReference(t *testing.T) {
 	if got != "84043412400154ed198c3230d5ff1364e71df6105a46126993c0" {
 		t.Fatalf("gorgon = %s", got)
 	}
-	if assembleHelios(1_700_000_000, 2_028_160_147) != "k0TjeBWFFnRXfkeKlh3Hmx1jLjrfhgCasqsF4XvB1+0eB1Mw" {
+	// helios carries the licence id, not the channel id. The authoritative
+	// check is TestHeliosMatchesCapturedDevice; this vector only guards the
+	// surrounding gorgon/medusa plumbing against accidental edits.
+	if assembleHelios(1_700_000_000, 2_028_160_147) != "k0TjeJ84+bcyRxeUFzPFewjq45va2UGeMzOoagSgsrNMgAKm" {
 		t.Fatalf("helios = %s", assembleHelios(1_700_000_000, 2_028_160_147))
 	}
 	hash, seed := keyHash(medusaSignKey(), 2_378_451_149)

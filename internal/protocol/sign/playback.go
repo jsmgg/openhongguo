@@ -49,10 +49,13 @@ var (
 )
 
 // SignPlaybackPOST signs the video_model request. It is SignPOST plus real
-// x-argus and x-ladon headers, and it drops x-medusa: when the account-style
-// Medusa header rides along with a valid 551 envelope the live service answers
-// playback with an empty 200 body, while removing it returns the full model
-// (observed 2026-11-10). Account and non-playback requests keep their Medusa.
+// x-argus and x-ladon headers.
+//
+// The playback service requires both x-helios and x-medusa: dropping either one
+// from a captured openHarmony request turns the 200 into an empty body
+// (verified 2026-11-17). An earlier revision deleted x-medusa here on the
+// theory that it clashed with the Argus envelope; the empty body was really the
+// x-helios licence id being wrong, so the medusa header is kept now.
 func SignPlaybackPOST(path string, pairs [][2]string, nowMillis int64, deviceID, versionName string, body []byte, entropy *Entropy) (string, map[string]string) {
 	query, headers := signRequest(path, pairs, nowMillis, deviceID, versionName, body, entropy)
 	// signRequest may bump khronos by a few milliseconds to pick an F13 branch,
@@ -66,7 +69,6 @@ func SignPlaybackPOST(path string, pairs [][2]string, nowMillis int64, deviceID,
 	aid := playbackAID(query)
 	headers["x-argus"] = argusHeader(query, bodyMD5, ts, randUint32(), aid, queryValue(query, "device_id"), queryValue(query, "iid"))
 	headers["x-ladon"] = ladonHeader(ts, randUint32(), aid)
-	delete(headers, "x-medusa")
 	return query, headers
 }
 
